@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Калькулятор НДФЛ 2025</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    input, button { padding: 5px; font-size: 1em; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: right; }
+    th { background-color: #f2f2f2; }
+    h1 { font-size: 1.5em; }
+    p { font-size: 1.1em; }
+  </style>
+</head>
+<body>
+  <h1>Калькулятор НДФЛ 2025</h1>
+  <label for="gross">Месячная «грязная» зарплата, ₽:</label>
+  <input type="number" id="gross" placeholder="200000" />
+  <button id="calcBtn">Рассчитать</button>
+  <div id="result"></div>
+
+  <script>
+    // Прогрессивная шкала НДФЛ 2025
+    const brackets = [
+      { min: 0,        max: 2400000, rate: 0.13 },
+      { min: 2400000,  max: 5000000, rate: 0.15 },
+      { min: 5000000,  max: 20000000, rate: 0.18 },
+      { min: 20000000, max: 50000000, rate: 0.20 },
+      { min: 50000000, max: Infinity, rate: 0.22 }
+    ];
+
+    // Названия месяцев
+    const monthNames = [
+      'Январь', 'Февраль', 'Март', 'Апрель',
+      'Май', 'Июнь', 'Июль', 'Август',
+      'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+    ];
+
+    // Функция расчёта налога по годовому доходу
+    function calcTax(income) {
+      let tax = 0;
+      for (const b of brackets) {
+        if (income <= b.min) break;
+        const upper = Math.min(income, b.max);
+        const taxable = upper - b.min;
+        tax += taxable * b.rate;
+        if (income <= b.max) break;
+      }
+      return tax;
+    }
+
+    // Форматирование числа: пробелы и две десятичные
+    function formatNumber(num) {
+      const parts = num.toFixed(2).split('.');
+      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+      return parts.join('.');
+    }
+
+    // Основная функция расчёта и вывода
+    function calculate() {
+      const grossMonth = parseFloat(document.getElementById('gross').value);
+      if (isNaN(grossMonth) || grossMonth <= 0) {
+        alert('Введите корректное число больше нуля');
+        return;
+      }
+
+      let cumGross = 0, prevTax = 0, totalTax = 0, totalNet = 0;
+      let html = `<table>
+        <tr><th>Месяц</th><th>Gross, ₽</th><th>Налог, ₽</th><th>Net, ₽</th></tr>`;
+
+      for (let i = 0; i < 12; i++) {
+        cumGross += grossMonth;
+        const cumTax = calcTax(cumGross);
+        const monthTax = cumTax - prevTax;
+        const net = grossMonth - monthTax;
+        html += `<tr>
+          <td style="text-align:left">${monthNames[i]}</td>
+          <td>${formatNumber(grossMonth)}</td>
+          <td>${formatNumber(monthTax)}</td>
+          <td>${formatNumber(net)}</td>
+        </tr>`;
+        prevTax += monthTax;
+        totalTax += monthTax;
+        totalNet += net;
+      }
+
+      const totalGross = cumGross;
+      const avgNet = totalNet / 12;
+      html += `<tr><th style="text-align:left">Итого</th><th>${formatNumber(totalGross)}</th><th>${formatNumber(totalTax)}</th><th>${formatNumber(totalNet)}</th></tr>`;
+      html += `</table>`;
+      html += `<p>Средняя чистая в месяц: <strong>${formatNumber(avgNet)} ₽</strong></p>`;
+
+      document.getElementById('result').innerHTML = html;
+    }
+
+    // События: клик по кнопке и Enter в поле
+    document.getElementById('calcBtn').addEventListener('click', calculate);
+    document.getElementById('gross').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') calculate();
+    });
+  </script>
+</body>
+</html>
